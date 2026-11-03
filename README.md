@@ -68,20 +68,22 @@ Windows 目标因 MinGW-w64 工具链限制，依赖 MSVCR120.dll 和 msvcrt.dll
 ./build-linux/weron-signaler-c -i 0.0.0.0 -p 8788
 ```
 
-## 四个实现的对比
+## 七个实现的对比
 
-| | C 版（libwebsockets） | Rust 版（axum） | Node.js 版（ws） | Python 版（aiohttp） |
-|---|---|---|---|---|
-| 运行时 | 零依赖（静态二进制） | Rust std + tokio | Node.js >= 16 | Python >= 3.10 |
-| 部署 | 直接运行二进制 | `cargo build --release` | `npm install && npm start` | `pip install -r requirements.txt` |
-| 内存 | ~2MB | ~5MB | ~30MB | ~15MB |
-| 并发 | libwebsockets 多线程 | tokio 异步多线程 | 单线程事件循环 | asyncio 单线程 |
-| TLS | 编译时可选 OpenSSL | 需反向代理 | 需反向代理 | 需反向代理 |
-| 分片重组 | 原生支持 | 不支持 | 不支持 | 不支持 |
+| | C（libwebsockets） | Cloudflare Workers | Python（aiohttp） | Python（stdlib） | Python（websockets） | Node.js（自托管） | Rust（axum） |
+|---|---|---|---|---|---|---|---|
+| 项目目录 | `weron-signaler-c/` | `weron-signaler-cf/` | `weron-signaler-python/relay.py` | `weron-signaler-python/relay_std.py` | `weron-signaler-python/relay_ws.py` | `weron-signaler-nodejs/` | `weron-signaler-rust/` |
+| 运行时 | 零依赖（静态二进制） | Cloudflare 平台 | Python + aiohttp | Python >= 3.10 stdlib | Python + websockets | Node.js >= 16 | Rust std + tokio |
+| 部署 | 直接运行二进制 | `wrangler deploy` | `pip install aiohttp` | 直接运行脚本 | `pip install websockets` | `npm install && npm start` 或 `node app_std.js` | `cargo build --release` |
+| 内存 | ~2MB | — | ~15MB | ~5MB | ~8MB | ~30MB / ~15MB(stdlib) | ~5MB |
+| 并发 | libwebsockets 多线程 | Durable Objects | asyncio 单线程 | asyncio 单线程 | asyncio 单线程 | 单线程事件循环 | tokio 异步多线程 |
+| TLS | 编译时可选 OpenSSL | 原生 HTTPS | 需反向代理 | 需反向代理 | 需反向代理 | 需反向代理 | 需反向代理 |
+| 分片重组 | ✅ 原生支持 | 不支持 | 不支持 | 不支持 | 不支持 | ✅ 支持(app_std.js) | 不支持 |
+| 第三方依赖 | 零 | wrangler CLI | `aiohttp` | 零 | `websockets>=14` | `ws` 或 零 | tokio + axum + tungstenite |
 
 ## 注意事项
 
-Go 客户端**必须**使用 `BinaryMessage` 发送 AES-GCM 加密数据。
+Go 客户端**必须**使用 `BinaryMessage` 接收数据。
 C 版是唯一原生支持 WebSocket 分片重组的实现——SDP 消息超过 4KB 时
 gorilla/websocket 会自动拆分，relay 侧 `relay_accumulate_fragment()` 重组后广播，
 接收方拿到完整密文。
