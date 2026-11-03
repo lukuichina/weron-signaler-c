@@ -56,7 +56,7 @@ make TARGET=armhf              # OpenWrt ARMv7 hard-float
 | Windows i686 musl | `win_i686_musl` | `build-win-i686-musl/weron-signaler-c.exe` | 535K |
 
 所有 Linux/OpenWrt 目标均为**完全静态链接**，零动态库依赖。
-Windows 目标因 MinGW-w64 工具链限制，依赖 MSVCR120.dll 和 msvcrt.dll（系统自带）。
+Windows 目标因 MinGW-w64 工具链限制，依赖 `KERNEL32.dll`、`msvcrt.dll`、`WS2_32.dll`（均为 Windows 系统自带）。
 
 ## 运行
 
@@ -84,6 +84,5 @@ Windows 目标因 MinGW-w64 工具链限制，依赖 MSVCR120.dll 和 msvcrt.dll
 ## 注意事项
 
 Go 客户端**必须**使用 `BinaryMessage` 接收数据。
-C 版是唯一原生支持 WebSocket 分片重组的实现——SDP 消息超过 4KB 时
-gorilla/websocket 会自动拆分，relay 侧 `relay_accumulate_fragment()` 重组后广播，
-接收方拿到完整密文。
+C 版和 Node.js `app_std.js` 均支持 WebSocket 分片重组——SDP 消息超过 4KB 时
+gorilla/websocket 会自动拆分，relay 侧重组后广播，接收方拿到完整密文。
